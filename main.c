@@ -33,7 +33,7 @@ static double diff_in_second(struct timespec t1, struct timespec t2)
 
 int main(int argc, char *argv[])
 {
-    
+
     struct timespec start, end;
     double cpu_time1, cpu_time2;
 
@@ -75,14 +75,14 @@ int main(int argc, char *argv[])
     /* allocate at beginning */
     entry *entry_pool = (entry *) malloc(sizeof(entry) * fs / MAX_LAST_NAME_SIZE);
     assert(entry_pool && "entry_pool error");
-    
+
     pthread_setconcurrency(THREAD_NUM + 1);
     pthread_t *tid = (pthread_t *) malloc(sizeof( pthread_t) * THREAD_NUM);
     append_a **app = (append_a **) malloc(sizeof(append_a *) * THREAD_NUM);
-        
+
     clock_gettime(CLOCK_REALTIME, &mid);
     for (int i = 0; i < THREAD_NUM; i++) {
-	app[i] = new_append_a(map + MAX_LAST_NAME_SIZE * i, map + fs, i, THREAD_NUM, entry_pool + i);
+        app[i] = new_append_a(map + MAX_LAST_NAME_SIZE * i, map + fs, i, THREAD_NUM, entry_pool + i);
         pthread_create( &tid[i], NULL, (void *) &append, (void *) app[i]);
     }
 

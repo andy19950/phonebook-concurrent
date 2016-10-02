@@ -50,8 +50,8 @@ void append(void *arg)
             loc += MAX_LAST_NAME_SIZE * app->nthread,
             current += app->nthread) {
         current->lastName = loc;
-	current->pNext = app->pHead;
-	app->pHead = current;
+        current->pNext = app->pHead;
+        app->pHead = current;
     }
 
     clock_gettime(CLOCK_REALTIME, &end);
