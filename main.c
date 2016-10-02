@@ -4,10 +4,15 @@
 #include <string.h>
 #include <time.h>
 #include <assert.h>
-
 #include <unistd.h>
 #include <pthread.h>
 #include <sys/mman.h>
+
+#include "file.c"
+#include "debug.h"
+#include <fcntl.h>
+#define ALIGN_FILE "align.txt"
+
 
 #include IMPL
 
@@ -28,29 +33,24 @@ static double diff_in_second(struct timespec t1, struct timespec t2)
 
 int main(int argc, char *argv[])
 {
-#ifndef OPT
-    FILE *fp;
-    int i = 0;
-    char line[MAX_LAST_NAME_SIZE];
-#else
-    struct timespec mid;
-#endif
+    
     struct timespec start, end;
     double cpu_time1, cpu_time2;
 
 #ifndef OPT
     /* check file opening */
+    FILE *fp;
+    int i = 0;
+    char line[MAX_LAST_NAME_SIZE];
+
     fp = fopen(DICT_FILE, "r");
     if (!fp) {
         printf("cannot open the file\n");
         return -1;
     }
-#else
 
-#include "file.c"
-#include "debug.h"
-#include <fcntl.h>
-#define ALIGN_FILE "align.txt"
+#else
+    struct timespec mid;
     file_align(DICT_FILE, ALIGN_FILE, MAX_LAST_NAME_SIZE);
     int fd = open(ALIGN_FILE, O_RDONLY | O_NONBLOCK);
     off_t fs = fsize( ALIGN_FILE);
@@ -67,49 +67,32 @@ int main(int argc, char *argv[])
     __builtin___clear_cache((char *) pHead, (char *) pHead + sizeof(entry));
 #endif
 
-#if defined(OPT)
-
-#ifndef THREAD_NUM
-#define THREAD_NUM 4
-#endif
-
+#if defined OPT
     clock_gettime(CLOCK_REALTIME, &start);
-
     char *map = mmap(NULL, fs, PROT_READ, MAP_SHARED, fd, 0);
-
     assert(map && "mmap error");
 
     /* allocate at beginning */
     entry *entry_pool = (entry *) malloc(sizeof(entry) * fs / MAX_LAST_NAME_SIZE);
-
     assert(entry_pool && "entry_pool error");
-
+    
     pthread_setconcurrency(THREAD_NUM + 1);
-
     pthread_t *tid = (pthread_t *) malloc(sizeof( pthread_t) * THREAD_NUM);
     append_a **app = (append_a **) malloc(sizeof(append_a *) * THREAD_NUM);
-    for (int i = 0; i < THREAD_NUM; i++)
-        app[i] = new_append_a(map + MAX_LAST_NAME_SIZE * i, map + fs, i, THREAD_NUM, entry_pool + i);
-
+        
     clock_gettime(CLOCK_REALTIME, &mid);
-    for (int i = 0; i < THREAD_NUM; i++)
+    for (int i = 0; i < THREAD_NUM; i++) {
+	app[i] = new_append_a(map + MAX_LAST_NAME_SIZE * i, map + fs, i, THREAD_NUM, entry_pool + i);
         pthread_create( &tid[i], NULL, (void *) &append, (void *) app[i]);
+    }
 
     for (int i = 0; i < THREAD_NUM; i++)
         pthread_join(tid[i], NULL);
 
-    entry *etmp;
-    pHead = pHead->pNext;
-    for (int i = 0; i < THREAD_NUM; i++) {
-        if (i == 0) {
-            pHead = app[i]->pHead->pNext;
-            dprintf("Connect %d head string %s %p\n", i, app[i]->pHead->pNext->lastName, app[i]->ptr);
-        } else {
-            etmp->pNext = app[i]->pHead->pNext;
-            dprintf("Connect %d head string %s %p\n", i, app[i]->pHead->pNext->lastName, app[i]->ptr);
-        }
-
-        etmp = app[i]->pLast;
+    pHead = app[0]->pHead;
+    for (int i = 1; i < THREAD_NUM; i++) {
+        app[i-1]->pLast->pNext = app[i]->pHead;
+        dprintf("Connect %d head string %s %p\n", i, app[i]->pHead->pNext->lastName, app[i]->ptr);
         dprintf("Connect %d tail string %s %p\n", i, app[i]->pLast->lastName, app[i]->ptr);
         dprintf("round %d\n", i);
     }
@@ -129,15 +112,9 @@ int main(int argc, char *argv[])
 
     clock_gettime(CLOCK_REALTIME, &end);
     cpu_time1 = diff_in_second(start, end);
-
-#endif
-
-#ifndef OPT
-    /* close file as soon as possible */
     fclose(fp);
-#endif
 
-    e = pHead;
+#endif
 
     /* the givn last name to find */
     char input[MAX_LAST_NAME_SIZE] = "zyxel";
@@ -150,6 +127,7 @@ int main(int argc, char *argv[])
 #if defined(__GNUC__)
     __builtin___clear_cache((char *) pHead, (char *) pHead + sizeof(entry));
 #endif
+
     /* compute the execution time */
     clock_gettime(CLOCK_REALTIME, &start);
     findName(input, e);
