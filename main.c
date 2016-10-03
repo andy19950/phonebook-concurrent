@@ -10,6 +10,7 @@
 
 #include "file.c"
 #include "debug.h"
+#include "threadpool.h"
 #include <fcntl.h>
 #define ALIGN_FILE "align.txt"
 
@@ -77,17 +78,16 @@ int main(int argc, char *argv[])
 
     pthread_setconcurrency(THREAD_NUM + 1);
     pthread_t *tid = (pthread_t *) malloc(sizeof( pthread_t) * THREAD_NUM);
+    threadpool_t *pool = threadpool_create(THREAD_NUM, 512, NULL); //512 for queue size
     append_a **app = (append_a **) malloc(sizeof(append_a *) * THREAD_NUM);
 
     clock_gettime(CLOCK_REALTIME, &mid);
     for (int i = 0; i < THREAD_NUM; i++) {
         app[i] = new_append_a(map + MAX_LAST_NAME_SIZE * i, map + fs, i, THREAD_NUM, entry_pool + i);
-        pthread_create( &tid[i], NULL, (void *) &append, (void *) app[i]);
+        threadpool_add(pool, &append, app[i], NULL);
     }
 
-    for (int i = 0; i < THREAD_NUM; i++)
-        pthread_join(tid[i], NULL);
-
+    threadpool_destroy(pool, 1);
     pHead = app[0]->pHead;
     for (int i = 1; i < THREAD_NUM; i++) {
         app[i-1]->pLast->pNext = app[i]->pHead;
