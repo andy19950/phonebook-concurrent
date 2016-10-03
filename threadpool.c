@@ -1,18 +1,18 @@
 /*
  * Copyright (c) 2016, Mathias Brossard <mathias@brossard.org>.
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- * 
+ *
  *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -71,17 +71,17 @@ typedef struct {
  *  @var started      Number of started threads
  */
 struct threadpool_t {
-  pthread_mutex_t lock;
-  pthread_cond_t notify;
-  pthread_t *threads;
-  threadpool_task_t *queue;
-  int thread_count;
-  int queue_size;
-  int head;
-  int tail;
-  int count;
-  int shutdown;
-  int started;
+    pthread_mutex_t lock;
+    pthread_cond_t notify;
+    pthread_t *threads;
+    threadpool_task_t *queue;
+    int thread_count;
+    int queue_size;
+    int head;
+    int tail;
+    int count;
+    int shutdown;
+    int started;
 };
 
 /**
@@ -98,7 +98,7 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
     if(thread_count <= 0 || thread_count > MAX_THREADS || queue_size <= 0 || queue_size > MAX_QUEUE) {
         return NULL;
     }
-    
+
     threadpool_t *pool;
     int i;
     (void) flags;
@@ -116,13 +116,13 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
     /* Allocate thread and task queue */
     pool->threads = (pthread_t *)malloc(sizeof(pthread_t) * thread_count);
     pool->queue = (threadpool_task_t *)malloc
-        (sizeof(threadpool_task_t) * queue_size);
+                  (sizeof(threadpool_task_t) * queue_size);
 
     /* Initialize mutex and conditional variable first */
     if((pthread_mutex_init(&(pool->lock), NULL) != 0) ||
-       (pthread_cond_init(&(pool->notify), NULL) != 0) ||
-       (pool->threads == NULL) ||
-       (pool->queue == NULL)) {
+            (pthread_cond_init(&(pool->notify), NULL) != 0) ||
+            (pool->threads == NULL) ||
+            (pool->queue == NULL)) {
         goto err;
     }
 
@@ -139,7 +139,7 @@ threadpool_t *threadpool_create(int thread_count, int queue_size, int flags)
 
     return pool;
 
- err:
+err:
     if(pool) {
         threadpool_free(pool);
     }
@@ -216,11 +216,11 @@ int threadpool_destroy(threadpool_t *pool, int flags)
         }
 
         pool->shutdown = (flags & threadpool_graceful) ?
-            graceful_shutdown : immediate_shutdown;
+                         graceful_shutdown : immediate_shutdown;
 
         /* Wake up all worker threads */
         if((pthread_cond_broadcast(&(pool->notify)) != 0) ||
-           (pthread_mutex_unlock(&(pool->lock)) != 0)) {
+                (pthread_mutex_unlock(&(pool->lock)) != 0)) {
             err = threadpool_lock_failure;
             break;
         }
@@ -250,7 +250,7 @@ int threadpool_free(threadpool_t *pool)
     if(pool->threads) {
         free(pool->threads);
         free(pool->queue);
- 
+
         /* Because we allocate pool->threads after initializing the
            mutex and condition variable, we're sure they're
            initialized. Let's lock the mutex just in case. */
@@ -258,7 +258,7 @@ int threadpool_free(threadpool_t *pool)
         pthread_mutex_destroy(&(pool->lock));
         pthread_cond_destroy(&(pool->notify));
     }
-    free(pool);    
+    free(pool);
     return 0;
 }
 
@@ -279,8 +279,8 @@ static void *threadpool_thread(void *threadpool)
         }
 
         if((pool->shutdown == immediate_shutdown) ||
-           ((pool->shutdown == graceful_shutdown) &&
-            (pool->count == 0))) {
+                ((pool->shutdown == graceful_shutdown) &&
+                 (pool->count == 0))) {
             break;
         }
 
