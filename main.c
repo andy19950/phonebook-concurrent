@@ -33,7 +33,6 @@ static double diff_in_second(struct timespec t1, struct timespec t2)
 
 int main(int argc, char *argv[])
 {
-
     struct timespec start, end;
     double cpu_time1, cpu_time2;
 
