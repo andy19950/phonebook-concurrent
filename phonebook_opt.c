@@ -11,11 +11,8 @@ entry *findName(char lastName[], entry *pHead)
     size_t len = strlen( lastName);
     entry *current = pHead;
     while (current != NULL) {
-        if (strncasecmp(lastName, current->lastName, len) == 0
-                && (current->lastName[len] == '\n' ||
-                    current->lastName[len] == '\0')) {
-            current->lastName = (char *) malloc( sizeof(char) * MAX_LAST_NAME_SIZE);
-            strcpy(current->lastName, lastName);
+        if (strncasecmp(lastName, current->lastName, len) == 0) {
+            current->lastName[len] = '\0';
             current->dtl = (detail *) malloc( sizeof(detail));
             return current;
         }

@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 #else
     struct timespec mid;
     file_align(DICT_FILE, ALIGN_FILE, MAX_LAST_NAME_SIZE);
-    int fd = open(ALIGN_FILE, O_RDONLY | O_NONBLOCK);
+    int fd = open(ALIGN_FILE, O_RDWR | O_NONBLOCK);
     off_t fs = fsize( ALIGN_FILE);
 #endif
 
@@ -69,7 +69,7 @@ int main(int argc, char *argv[])
 
 #if defined OPT
     clock_gettime(CLOCK_REALTIME, &start);
-    char *map = mmap(NULL, fs, PROT_READ, MAP_SHARED, fd, 0);
+    char *map = mmap(NULL, fs, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     assert(map && "mmap error");
 
     /* allocate at beginning */
