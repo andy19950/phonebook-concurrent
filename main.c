@@ -4,7 +4,6 @@
 #include <string.h>
 #include <time.h>
 #include <assert.h>
-#include <unistd.h>
 #include <pthread.h>
 #include <sys/mman.h>
 
@@ -37,7 +36,6 @@ int main(int argc, char *argv[])
     struct timespec start, end;
     double cpu_time1, cpu_time2;
 
-#ifndef OPT
     /* check file opening */
     FILE *fp;
     int i = 0;
@@ -48,13 +46,6 @@ int main(int argc, char *argv[])
         printf("cannot open the file\n");
         return -1;
     }
-
-#else
-    struct timespec mid;
-    file_align(DICT_FILE, ALIGN_FILE, MAX_LAST_NAME_SIZE);
-    int fd = open(ALIGN_FILE, O_RDWR | O_NONBLOCK);
-    off_t fs = fsize( ALIGN_FILE);
-#endif
 
     /* build the entry */
     entry *pHead, *e;
@@ -67,7 +58,12 @@ int main(int argc, char *argv[])
     __builtin___clear_cache((char *) pHead, (char *) pHead + sizeof(entry));
 #endif
 
-#if defined OPT
+#ifdef OPT
+    struct timespec mid;
+    file_align(DICT_FILE, ALIGN_FILE, MAX_LAST_NAME_SIZE);
+    int fd = open(ALIGN_FILE, O_RDWR | O_NONBLOCK);
+    off_t fs = fsize( ALIGN_FILE);
+
     clock_gettime(CLOCK_REALTIME, &start);
     char *map = mmap(NULL, fs, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     assert(map && "mmap error");
@@ -115,13 +111,24 @@ int main(int argc, char *argv[])
 
 #endif
 
-    /* the givn last name to find */
+
+
     char input[MAX_LAST_NAME_SIZE] = "zyxel";
     e = pHead;
-
     assert(findName(input, e) &&
            "Did you implement findName() in " IMPL "?");
     assert(0 == strcmp(findName(input, e)->lastName, "zyxel"));
+
+    /*  check linked-list data (the run time is very long)
+
+        while(fgets(line, sizeof(line), fp)) {
+    	e = pHead;
+    	printf("%s", line);
+    	if(strcmp(findName(line, e)->lastName, line) != 0) {
+    	    printf("ERROR : Name %s is not in linked-list!!\n", line);
+    	}
+        }
+    */
 
 #if defined(__GNUC__)
     __builtin___clear_cache((char *) pHead, (char *) pHead + sizeof(entry));
@@ -139,7 +146,7 @@ int main(int argc, char *argv[])
 #else
     output = fopen("orig.txt", "a");
 #endif
-    fprintf(output, "append() findName() %lf %lf\n", cpu_time1, cpu_time2);
+    fprintf(output, "append() %lf\n", cpu_time1);
     fclose(output);
 
     printf("execution time of append() : %lf sec\n", cpu_time1);
